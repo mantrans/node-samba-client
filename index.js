@@ -125,7 +125,7 @@ class SambaClient {
   runCommand(cmd, path, destination) {
     let workingDir = p.dirname(path);
     let fileName = p.basename(path).replace(singleSlash, "\\");
-    let cmdArgs = util.format("%s %s", fileName, destination);
+    let cmdArgs = util.format("\\\"%s\\\" \\\"%s\\\"", fileName, destination);
 
     return this.execute(cmd, cmdArgs, workingDir);
   }
