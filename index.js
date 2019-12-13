@@ -2,7 +2,7 @@
 
 const exec = require('child_process').exec;
 const util = require('util');
-const p    = require('path');
+const p = require('path');
 
 const singleSlash = /\//g;
 /*
@@ -12,35 +12,35 @@ const singleSlash = /\//g;
 const missingFileRegex = /(NT_STATUS_OBJECT_NAME_NOT_FOUND|NT_STATUS_NO_SUCH_FILE)/im;
 
 function wrap(str) {
-  return '\'' + str + '\'';
+  return "\"" + str + "\"";
 }
 
 class SambaClient {
   constructor(options) {
     this.address = options.address;
-    this.username = wrap(options.username || 'guest');
+    this.username = wrap(options.username || "guest");
     this.password = options.password ? wrap(options.password) : null;
     this.domain = options.domain;
   }
 
   getFile(path, destination) {
-    return this.runCommand('get', path, destination);
+    return this.runCommand("get", path, destination);
   }
 
   sendFile(path, destination) {
-    return this.runCommand('put', path, destination.replace(singleSlash, '\\'));
+    return this.runCommand("put", path, destination.replace(singleSlash, "\\"));
   }
 
   deleteFile(fileName) {
-    return this.execute('del', fileName, '');
+    return this.execute("del", fileName, "");
   }
 
   async listFiles(fileNamePrefix, fileNameSuffix) {
     try {
-      let cmdArgs = util.format('%s*%s', fileNamePrefix, fileNameSuffix);
-      let allOutput = await this.execute('dir', cmdArgs, '');
+      let cmdArgs = util.format("%s*%s", fileNamePrefix, fileNameSuffix);
+      let allOutput = await this.execute("dir", cmdArgs, "");
       let fileList = [];
-      let lines = allOutput.split('\n');
+      let lines = allOutput.split("\n");
       for (let i = 0; i < lines.length; i++) {
         let line = lines[i].toString().trim();
         if (line.startsWith(fileNamePrefix)) {
@@ -49,7 +49,7 @@ class SambaClient {
         }
       }
       return fileList;
-    } catch(e) {
+    } catch (e) {
       if (e.message.match(missingFileRegex)) {
         return [];
       } else {
@@ -59,18 +59,18 @@ class SambaClient {
   }
 
   mkdir(remotePath) {
-    return this.execute('mkdir', remotePath.replace(singleSlash, '\\'), __dirname);
+    return this.execute("mkdir", remotePath.replace(singleSlash, "\\"), __dirname);
   }
 
   dir(remotePath) {
-    return this.execute('dir', remotePath.replace(singleSlash, '\\'), __dirname);
+    return this.execute("dir", remotePath.replace(singleSlash, "\\"), __dirname);
   }
 
   async fileExists(remotePath) {
     try {
       await this.dir(remotePath);
       return true;
-    } catch(e) {
+    } catch (e) {
       if (e.message.match(missingFileRegex)) {
         return false;
       } else {
@@ -80,20 +80,20 @@ class SambaClient {
   }
 
   getSmbClientArgs(fullCmd) {
-    let args = ['-U', this.username];
+    let args = ["-U", this.username];
 
     if (!this.password) {
-      args.push('-N');
+      args.push("-N");
     }
 
-    args.push('-c', fullCmd, this.address);
+    args.push("-c", fullCmd, this.address);
 
     if (this.password) {
       args.push(this.password);
     }
 
     if (this.domain) {
-      args.push('-W');
+      args.push("-W");
       args.push(this.domain);
     }
 
@@ -101,15 +101,15 @@ class SambaClient {
   }
 
   execute(cmd, cmdArgs, workingDir) {
-    let fullCmd = wrap(util.format('%s %s', cmd, cmdArgs));
-    let command = ['smbclient', this.getSmbClientArgs(fullCmd).join(' ')].join(' ');
+    let fullCmd = wrap(util.format("%s %s", cmd, cmdArgs));
+    let command = ["smbclient", this.getSmbClientArgs(fullCmd).join(" ")].join(" ");
 
     let options = {
       cwd: workingDir
     };
 
     return new Promise((resolve, reject) => {
-      exec(command, options, function(err, stdout, stderr) {
+      exec(command, options, function (err, stdout, stderr) {
         let allOutput = stdout + stderr;
 
         if (err) {
@@ -124,15 +124,15 @@ class SambaClient {
 
   runCommand(cmd, path, destination) {
     let workingDir = p.dirname(path);
-    let fileName = p.basename(path).replace(singleSlash, '\\');
-    let cmdArgs = util.format('%s %s', fileName, destination);
+    let fileName = p.basename(path).replace(singleSlash, "\\");
+    let cmdArgs = util.format("%s %s", fileName, destination);
 
     return this.execute(cmd, cmdArgs, workingDir);
   }
 
   getAllShares() {
     return new Promise((resolve, reject) => {
-      exec('smbtree -U guest -N', {}, function(err, stdout, stderr) {
+      exec("smbtree -U guest -N", {}, function (err, stdout, stderr) {
         let allOutput = stdout + stderr;
 
         if (err !== null) {
