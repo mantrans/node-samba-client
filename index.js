@@ -21,6 +21,9 @@ class SambaClient {
     this.username = wrap(options.username || "guest");
     this.password = options.password ? wrap(options.password) : null;
     this.domain = options.domain;
+    // Possible values for protocol version are listed in the Samba man pages:
+    // https://www.samba.org/samba/docs/current/man-html/smb.conf.5.html#CLIENTMAXPROTOCOL
+    this.maxProtocol = options.maxProtocol;
   }
 
   getFile(path, destination) {
@@ -58,17 +61,17 @@ class SambaClient {
     }
   }
 
-  mkdir(remotePath) {
-    return this.execute("mkdir", remotePath.replace(singleSlash, "\\"), __dirname);
+  mkdir(remotePath, cwd) {
+    return this.execute("mkdir", remotePath.replace(singleSlash, "\\"), cwd !== null && cwd !== undefined ? cwd : __dirname);
   }
 
-  dir(remotePath) {
-    return this.execute("dir", remotePath.replace(singleSlash, "\\"), __dirname);
+  dir(remotePath, cwd) {
+    return this.execute("dir", remotePath.replace(singleSlash, "\\"), cwd !== null && cwd !== undefined ? cwd : __dirname);
   }
 
-  async fileExists(remotePath) {
+  async fileExists(remotePath, cwd) {
     try {
-      await this.dir(remotePath);
+      await this.dir(remotePath, cwd);
       return true;
     } catch (e) {
       if (e.message.match(missingFileRegex)) {
@@ -95,6 +98,10 @@ class SambaClient {
     if (this.domain) {
       args.push("-W");
       args.push(this.domain);
+    }
+
+    if (this.maxProtocol) {
+      args.push("--max-protocol", this.maxProtocol);
     }
 
     return args;
